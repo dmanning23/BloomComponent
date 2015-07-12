@@ -1,59 +1,61 @@
-#region File Description
-//-----------------------------------------------------------------------------
-// BloomSettings.cs
-//
-// Microsoft XNA Community Game Platform
-// Copyright (C) Microsoft Corporation. All rights reserved.
-//-----------------------------------------------------------------------------
-#endregion
 
-namespace BlackWhite
+namespace BloomBuddy
 {
 	/// <summary>
 	/// Class holds all the settings used to tweak the bloom effect.
 	/// </summary>
 	public class BloomSettings
 	{
-		#region Fields
+		#region Properties
 
+		/// <summary>
+		/// Name of a preset bloom setting, for display to the user.
+		/// </summary>
+		public string Name { get; set; }
 
-		// Name of a preset bloom setting, for display to the user.
-		public readonly string Name;
+		/// <summary>
+		/// Controls how bright a pixel needs to be before it will bloom.
+		/// Zero makes everything bloom equally, while higher values select only brighter colors. 
+		/// Somewhere between 0.25 and 0.5 is good.
+		/// </summary>
+		public float BloomThreshold { get; set; }
 
+		/// <summary>
+		/// Controls how much blurring is applied to the bloom image.
+		/// The typical range is from 1 up to 10 or so.
+		/// </summary>
+		public float BlurAmount { get; set; }
 
-		// Controls how bright a pixel needs to be before it will bloom.
-		// Zero makes everything bloom equally, while higher values select
-		// only brighter colors. Somewhere between 0.25 and 0.5 is good.
-		public readonly float BloomThreshold;
+		/// <summary>
+		/// Controls the amount of the bloom and base images that will be mixed into the final scene. 
+		/// Range 0 to 1.
+		/// </summary>
+		public float BloomIntensity { get; set; }
 
+		public float BaseIntensity { get; set; }
 
-		// Controls how much blurring is applied to the bloom image.
-		// The typical range is from 1 up to 10 or so.
-		public readonly float BlurAmount;
+		/// <summary>
+		/// Independently control the color saturation of the bloom and base images. 
+		/// Zero is totally desaturated, 1.0 leaves saturation unchanged, while higher values increase the saturation level.
+		/// </summary>
+		public float BloomSaturation { get; set; }
 
-
-		// Controls the amount of the bloom and base images that
-		// will be mixed into the final scene. Range 0 to 1.
-		public readonly float BloomIntensity;
-		public readonly float BaseIntensity;
-
-
-		// Independently control the color saturation of the bloom and
-		// base images. Zero is totally desaturated, 1.0 leaves saturation
-		// unchanged, while higher values increase the saturation level.
-		public readonly float BloomSaturation;
-		public readonly float BaseSaturation;
-
+		public float BaseSaturation { get; set; }
 
 		#endregion
 
+		#region Methods
 
 		/// <summary>
 		/// Constructs a new bloom settings descriptor.
 		/// </summary>
-		public BloomSettings(string name, float bloomThreshold, float blurAmount,
-							 float bloomIntensity, float baseIntensity,
-							 float bloomSaturation, float baseSaturation)
+		public BloomSettings(string name,
+			float bloomThreshold,
+			float blurAmount,
+			float bloomIntensity,
+			float baseIntensity,
+			float bloomSaturation,
+			float baseSaturation)
 		{
 			Name = name;
 			BloomThreshold = bloomThreshold;
@@ -63,7 +65,6 @@ namespace BlackWhite
 			BloomSaturation = bloomSaturation;
 			BaseSaturation = baseSaturation;
 		}
-
 
 		/// <summary>
 		/// Table of preset bloom settings, used by the sample program.
@@ -79,5 +80,7 @@ namespace BlackWhite
 			new BloomSettings(	"Saturated",	0.25f,	4,		2,		1,		2,			0),
 			new BloomSettings(	"Blurry",		0,		2,		1,		0.1f,	1,			1)
 		};
+
+		#endregion Methods
 	}
 }

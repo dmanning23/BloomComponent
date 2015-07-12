@@ -1,18 +1,8 @@
-#region File Description
-//-----------------------------------------------------------------------------
-// BloomComponent.cs
-//
-// Microsoft XNA Community Game Platform
-// Copyright (C) Microsoft Corporation. All rights reserved.
-//-----------------------------------------------------------------------------
-#endregion
-
-using System;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 
-namespace BlackWhite
+namespace BloomBuddy
 {
 	public class BloomComponent : DrawableGameComponent
 	{
@@ -24,10 +14,9 @@ namespace BlackWhite
 		Effect bloomCombineEffect;
 		Effect gaussianBlurEffect;
 
-		ResolveTexture2D resolveTarget;
+		RenderTarget2D sceneRenderTarget;
 		RenderTarget2D renderTarget1;
 		RenderTarget2D renderTarget2;
-
 
 		// Choose what display settings the bloom should use.
 		public BloomSettings Settings
@@ -37,7 +26,6 @@ namespace BlackWhite
 		}
 
 		BloomSettings settings = BloomSettings.PresetSettings[0];
-
 
 		// Optionally displays one of the intermediate buffers used
 		// by the bloom postprocess, so you can see exactly what is
@@ -58,11 +46,9 @@ namespace BlackWhite
 
 		IntermediateBuffer showBuffer = IntermediateBuffer.FinalResult;
 
-
 		#endregion
 
 		#region Initialization
-
 
 		public BloomComponent(Game game)
 			: base(game)
@@ -70,7 +56,6 @@ namespace BlackWhite
 			if (game == null)
 				throw new ArgumentNullException("game");
 		}
-
 
 		/// <summary>
 		/// Load your graphics content.
@@ -83,7 +68,6 @@ namespace BlackWhite
 			bloomCombineEffect = Game.Content.Load<Effect>("BloomCombine");
 			gaussianBlurEffect = Game.Content.Load<Effect>("GaussianBlur");
 
-
 			// Look up the resolution and format of our main backbuffer.
 			PresentationParameters pp = GraphicsDevice.PresentationParameters;
 
@@ -92,9 +76,10 @@ namespace BlackWhite
 
 			SurfaceFormat format = pp.BackBufferFormat;
 
-			// Create a texture for reading back the backbuffer contents.
-			resolveTarget = new ResolveTexture2D(GraphicsDevice, width, height, 1,
-				format);
+			// Create a texture for rendering the main scene, prior to applying bloom.
+			sceneRenderTarget = new RenderTarget2D(GraphicsDevice, width, height, false,
+												   format, pp.DepthStencilFormat, pp.MultiSampleCount,
+												   RenderTargetUsage.DiscardContents);
 
 			// Create two rendertargets for the bloom processing. These are half the
 			// size of the backbuffer, in order to minimize fillrate costs. Reducing
@@ -103,28 +88,36 @@ namespace BlackWhite
 			width /= 2;
 			height /= 2;
 
-			renderTarget1 = new RenderTarget2D(GraphicsDevice, width, height, 1,
-				format);
-			renderTarget2 = new RenderTarget2D(GraphicsDevice, width, height, 1,
-				format);
+			renderTarget1 = new RenderTarget2D(GraphicsDevice, width, height, false, format, DepthFormat.None);
+			renderTarget2 = new RenderTarget2D(GraphicsDevice, width, height, false, format, DepthFormat.None);
 		}
-
 
 		/// <summary>
 		/// Unload your graphics content.
 		/// </summary>
 		protected override void UnloadContent()
 		{
-			resolveTarget.Dispose();
+			sceneRenderTarget.Dispose();
 			renderTarget1.Dispose();
 			renderTarget2.Dispose();
 		}
-
 
 		#endregion
 
 		#region Draw
 
+		/// <summary>
+		/// This should be called at the very start of the scene rendering. The bloom
+		/// component uses it to redirect drawing into its custom rendertarget, so it
+		/// can capture the scene image in preparation for applying the bloom filter.
+		/// </summary>
+		public void BeginDraw()
+		{
+			if (Visible)
+			{
+				GraphicsDevice.SetRenderTarget(sceneRenderTarget);
+			}
+		}
 
 		/// <summary>
 		/// This is where it all happens. Grabs a scene that has already been rendered,
@@ -132,16 +125,13 @@ namespace BlackWhite
 		/// </summary>
 		public override void Draw(GameTime gameTime)
 		{
-			// Resolve the scene into a texture, so we can
-			// use it as input data for the bloom processing.
-			GraphicsDevice.ResolveBackBuffer(resolveTarget);
+			GraphicsDevice.SamplerStates[1] = SamplerState.LinearClamp;
 
 			// Pass 1: draw the scene into rendertarget 1, using a
 			// shader that extracts only the brightest parts of the image.
-			bloomExtractEffect.Parameters["BloomThreshold"].SetValue(
-				Settings.BloomThreshold);
+			bloomExtractEffect.Parameters["BloomThreshold"].SetValue(Settings.BloomThreshold);
 
-			DrawFullscreenQuad(resolveTarget, renderTarget1,
+			DrawFullscreenQuad(sceneRenderTarget, renderTarget1,
 							   bloomExtractEffect,
 							   IntermediateBuffer.PreBloom);
 
@@ -149,7 +139,7 @@ namespace BlackWhite
 			// using a shader to apply a horizontal gaussian blur filter.
 			SetBlurEffectParameters(1.0f / (float)renderTarget1.Width, 0);
 
-			DrawFullscreenQuad(renderTarget1.GetTexture(), renderTarget2,
+			DrawFullscreenQuad(renderTarget1, renderTarget2,
 							   gaussianBlurEffect,
 							   IntermediateBuffer.BlurredHorizontally);
 
@@ -157,14 +147,14 @@ namespace BlackWhite
 			// using a shader to apply a vertical gaussian blur filter.
 			SetBlurEffectParameters(0, 1.0f / (float)renderTarget1.Height);
 
-			DrawFullscreenQuad(renderTarget2.GetTexture(), renderTarget1,
+			DrawFullscreenQuad(renderTarget2, renderTarget1,
 							   gaussianBlurEffect,
 							   IntermediateBuffer.BlurredBothWays);
 
 			// Pass 4: draw both rendertarget 1 and the original scene
 			// image back into the main backbuffer, using a shader that
 			// combines them to produce the final bloomed result.
-			GraphicsDevice.SetRenderTarget(0, null);
+			GraphicsDevice.SetRenderTarget(null);
 
 			EffectParameterCollection parameters = bloomCombineEffect.Parameters;
 
@@ -172,17 +162,16 @@ namespace BlackWhite
 			parameters["BaseIntensity"].SetValue(Settings.BaseIntensity);
 			parameters["BloomSaturation"].SetValue(Settings.BloomSaturation);
 			parameters["BaseSaturation"].SetValue(Settings.BaseSaturation);
-
-			GraphicsDevice.Textures[1] = resolveTarget;
+			parameters["BaseTexture"].SetValue(sceneRenderTarget);
+			//GraphicsDevice.Textures[1] = sceneRenderTarget;
 
 			Viewport viewport = GraphicsDevice.Viewport;
 
-			DrawFullscreenQuad(renderTarget1.GetTexture(),
+			DrawFullscreenQuad(renderTarget1,
 							   viewport.Width, viewport.Height,
 							   bloomCombineEffect,
 							   IntermediateBuffer.FinalResult);
 		}
-
 
 		/// <summary>
 		/// Helper for drawing a texture into a rendertarget, using
@@ -191,15 +180,12 @@ namespace BlackWhite
 		void DrawFullscreenQuad(Texture2D texture, RenderTarget2D renderTarget,
 								Effect effect, IntermediateBuffer currentBuffer)
 		{
-			GraphicsDevice.SetRenderTarget(0, renderTarget);
+			GraphicsDevice.SetRenderTarget(renderTarget);
 
 			DrawFullscreenQuad(texture,
 							   renderTarget.Width, renderTarget.Height,
 							   effect, currentBuffer);
-
-			GraphicsDevice.SetRenderTarget(0, null);
 		}
-
 
 		/// <summary>
 		/// Helper for drawing a texture into the current rendertarget,
@@ -208,32 +194,18 @@ namespace BlackWhite
 		void DrawFullscreenQuad(Texture2D texture, int width, int height,
 								Effect effect, IntermediateBuffer currentBuffer)
 		{
-			spriteBatch.Begin(SpriteBlendMode.None,
-							  SpriteSortMode.Immediate,
-							  SaveStateMode.None);
-
-			// Begin the custom effect, if it is currently enabled. If the user
-			// has selected one of the show intermediate buffer options, we still
-			// draw the quad to make sure the image will end up on the screen,
+			// If the user has selected one of the show intermediate buffer options,
+			// we still draw the quad to make sure the image will end up on the screen,
 			// but might need to skip applying the custom pixel shader.
-			if (showBuffer >= currentBuffer)
+			if (showBuffer < currentBuffer)
 			{
-				effect.Begin();
-				effect.CurrentTechnique.Passes[0].Begin();
+				effect = null;
 			}
 
-			// Draw the quad.
+			spriteBatch.Begin(0, BlendState.Opaque, null, null, null, effect);
 			spriteBatch.Draw(texture, new Rectangle(0, 0, width, height), Color.White);
 			spriteBatch.End();
-
-			// End the custom effect.
-			if (showBuffer >= currentBuffer)
-			{
-				effect.CurrentTechnique.Passes[0].End();
-				effect.End();
-			}
 		}
-
 
 		/// <summary>
 		/// Computes sample weightings and texture coordinate offsets
@@ -242,10 +214,8 @@ namespace BlackWhite
 		void SetBlurEffectParameters(float dx, float dy)
 		{
 			// Look up the sample weight and offset effect parameters.
-			EffectParameter weightsParameter, offsetsParameter;
-
-			weightsParameter = gaussianBlurEffect.Parameters["SampleWeights"];
-			offsetsParameter = gaussianBlurEffect.Parameters["SampleOffsets"];
+			var weightsParameter = gaussianBlurEffect.Parameters["SampleWeights"];
+			var offsetsParameter = gaussianBlurEffect.Parameters["SampleOffsets"];
 
 			// Look up how many samples our gaussian blur effect supports.
 			int sampleCount = weightsParameter.Elements.Count;
@@ -301,7 +271,6 @@ namespace BlackWhite
 			offsetsParameter.SetValue(sampleOffsets);
 		}
 
-
 		/// <summary>
 		/// Evaluates a single point on the gaussian falloff curve.
 		/// Used for setting up the blur filter weightings.
@@ -313,7 +282,6 @@ namespace BlackWhite
 			return (float)((1.0 / Math.Sqrt(2 * Math.PI * theta)) *
 						   Math.Exp(-(n * n) / (2 * theta * theta)));
 		}
-
 
 		#endregion
 	}
