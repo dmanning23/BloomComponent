@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("BloomBloomBuddy.Windows")]
+[assembly: AssemblyTitle("BloomComponent.DesktopGL")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Hewlett-Packard")]
-[assembly: AssemblyProduct("BloomBloomBuddy.Windows")]
-[assembly: AssemblyCopyright("Copyright © Hewlett-Packard 2015")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("BloomComponent.DesktopGL")]
+[assembly: AssemblyCopyright("Copyright ©  2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("b2c30abd-7e34-4cbc-b6ef-a4393a9927f4")]
+[assembly: Guid("de31d612-8d73-47c7-8bd3-33e808e89ec6")]
 
 // Version information for an assembly consists of the following four values:
 //

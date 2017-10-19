@@ -1,14 +1,16 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 
 namespace BloomBuddy
 {
-	public class BloomComponent : DrawableGameComponent
+	public class BloomComponent : IDisposable
 	{
 		#region Fields
 
-		SpriteBatch spriteBatch;
+		SpriteBatch SpriteBatch { get; set; }
+		GraphicsDevice GraphicsDevice { get; set; }
 
 		Effect bloomExtractEffect;
 		Effect bloomCombineEffect;
@@ -50,23 +52,21 @@ namespace BloomBuddy
 
 		#region Initialization
 
-		public BloomComponent(Game game)
-			: base(game)
+		public BloomComponent()
 		{
-			if (game == null)
-				throw new ArgumentNullException("game");
 		}
 
 		/// <summary>
 		/// Load your graphics content.
 		/// </summary>
-		protected override void LoadContent()
+		public void LoadContent(SpriteBatch spriteBatch, ContentManager content, GraphicsDevice device)
 		{
-			spriteBatch = new SpriteBatch(GraphicsDevice);
+			SpriteBatch = spriteBatch;
+			GraphicsDevice = device;
 
-			bloomExtractEffect = Game.Content.Load<Effect>("BloomExtract");
-			bloomCombineEffect = Game.Content.Load<Effect>("BloomCombine");
-			gaussianBlurEffect = Game.Content.Load<Effect>("GaussianBlur");
+			bloomExtractEffect = content.Load<Effect>("BloomExtract");
+			bloomCombineEffect = content.Load<Effect>("BloomCombine");
+			gaussianBlurEffect = content.Load<Effect>("GaussianBlur");
 
 			// Look up the resolution and format of our main backbuffer.
 			PresentationParameters pp = GraphicsDevice.PresentationParameters;
@@ -95,11 +95,15 @@ namespace BloomBuddy
 		/// <summary>
 		/// Unload your graphics content.
 		/// </summary>
-		protected override void UnloadContent()
+		public void Dispose()
 		{
 			sceneRenderTarget.Dispose();
 			renderTarget1.Dispose();
 			renderTarget2.Dispose();
+
+			sceneRenderTarget = null;
+			renderTarget1 = null;
+			renderTarget2 = null;
 		}
 
 		#endregion
@@ -113,17 +117,14 @@ namespace BloomBuddy
 		/// </summary>
 		public void BeginDraw()
 		{
-			if (Visible)
-			{
-				GraphicsDevice.SetRenderTarget(sceneRenderTarget);
-			}
+			GraphicsDevice.SetRenderTarget(sceneRenderTarget);
 		}
 
 		/// <summary>
 		/// This is where it all happens. Grabs a scene that has already been rendered,
 		/// and uses postprocess magic to add a glowing bloom effect over the top of it.
 		/// </summary>
-		public override void Draw(GameTime gameTime)
+		public void Draw(GameTime gameTime)
 		{
 			GraphicsDevice.SamplerStates[1] = SamplerState.LinearClamp;
 
@@ -202,9 +203,9 @@ namespace BloomBuddy
 				effect = null;
 			}
 
-			spriteBatch.Begin(0, BlendState.Opaque, null, null, null, effect);
-			spriteBatch.Draw(texture, new Rectangle(0, 0, width, height), Color.White);
-			spriteBatch.End();
+			SpriteBatch.Begin(0, BlendState.Opaque, null, null, null, effect);
+			SpriteBatch.Draw(texture, new Rectangle(0, 0, width, height), Color.White);
+			SpriteBatch.End();
 		}
 
 		/// <summary>
