@@ -15,9 +15,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BloomComponent.WindowsUnive
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7385FC90-07A5-4ACA-8429-E1CA233057B8}"
 	ProjectSection(SolutionItems) = preProject
-		..\Source\Content\BloomCombine.fx = ..\Source\Content\BloomCombine.fx
-		..\Source\Content\BloomExtract.fx = ..\Source\Content\BloomExtract.fx
-		..\Source\Content\GaussianBlur.fx = ..\Source\Content\GaussianBlur.fx
+		..\Content\BloomCombine.fx = ..\Content\BloomCombine.fx
+		BloomComponent.nuspec = BloomComponent.nuspec
+		..\Content\BloomExtract.fx = ..\Content\BloomExtract.fx
+		buildNugetPackages.ps1 = buildNugetPackages.ps1
+		..\Content\GaussianBlur.fx = ..\Content\GaussianBlur.fx
 	EndProjectSection
 EndProject
 Global
