@@ -59,10 +59,10 @@ namespace BloomBuddy
 		/// <summary>
 		/// Load your graphics content.
 		/// </summary>
-		public void LoadContent(SpriteBatch spriteBatch, ContentManager content, GraphicsDevice device)
+		public void LoadContent(SpriteBatch spriteBatch, ContentManager content, GraphicsDeviceManager device)
 		{
 			SpriteBatch = spriteBatch;
-			GraphicsDevice = device;
+			GraphicsDevice = device.GraphicsDevice;
 
 			bloomExtractEffect = content.Load<Effect>("BloomExtract");
 			bloomCombineEffect = content.Load<Effect>("BloomCombine");
