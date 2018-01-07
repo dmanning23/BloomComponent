@@ -1,3 +1,11 @@
+#if OPENGL
+#define VS_SHADERMODEL vs_3_0
+#define PS_SHADERMODEL ps_3_0
+#else
+#define VS_SHADERMODEL vs_4_0
+#define PS_SHADERMODEL ps_4_0
+#endif
+
 // Pixel shader applies a one dimensional gaussian blur filter.
 // This is used twice by the bloom postprocess, first to
 // blur horizontally, and then again to blur vertically.
@@ -26,6 +34,6 @@ technique GaussianBlur
 {
     pass Pass1
     {
-        PixelShader = compile ps_3_0 main();
+        PixelShader = compile PS_SHADERMODEL main();
     }
 }

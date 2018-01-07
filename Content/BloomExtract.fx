@@ -1,3 +1,11 @@
+#if OPENGL
+#define VS_SHADERMODEL vs_3_0
+#define PS_SHADERMODEL ps_3_0
+#else
+#define VS_SHADERMODEL vs_4_0
+#define PS_SHADERMODEL ps_4_0
+#endif
+
 // Pixel shader extracts the brighter areas of an image.
 // This is the first step in applying a bloom postprocess.
 
@@ -18,6 +26,6 @@ technique BloomExtract
 {
     pass Pass1
     {
-        PixelShader = compile ps_3_0 main();
+        PixelShader = compile PS_SHADERMODEL main();
     }
 }

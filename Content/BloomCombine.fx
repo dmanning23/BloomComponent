@@ -1,3 +1,11 @@
+#if OPENGL
+#define VS_SHADERMODEL vs_3_0
+#define PS_SHADERMODEL ps_3_0
+#else
+#define VS_SHADERMODEL vs_4_0
+#define PS_SHADERMODEL ps_4_0
+#endif
+
 // Pixel shader combines the bloom image with the original
 // scene, using tweakable intensity levels and saturation.
 // This is the final step in applying a bloom postprocess.
@@ -49,6 +57,6 @@ technique BloomCombine
 {
     pass Pass1
     {
-        PixelShader = compile ps_3_0 main();
+        PixelShader = compile PS_SHADERMODEL main();
     }
 }
