@@ -3,6 +3,8 @@ Add bloom effect to MonoGame projects
 
 # How to use:
 
+For an example game implementing the BloomComponent, check out https://github.com/dmanning23/BloomComponentExample
+
 1.Add the Nuget package to your solution: https://www.nuget.org/packages/BloomComponent/
 
 2. In the MonoGame Pipeline tool for your project, add the 3 shaders that were installed with the Nuget package.
