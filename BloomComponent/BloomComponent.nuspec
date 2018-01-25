@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
 	<metadata>
 		<id>BloomComponent</id>
-		<version>1.0.4</version>
+		<version>1.0.7</version>
 		<title>BloomComponent</title>
 		<authors>dmanning23</authors>
 		<owners>dmanning23</owners>
@@ -32,7 +32,7 @@
 			</group>
 
 			<group targetFramework="net451">
-				<dependency id="MonoGame.Framework.DesktopGL" version="3.5"/>
+				<dependency id="MonoGame.Framework.WindowsDX" version="3.5"/>
 			</group>
 
 		</dependencies>
@@ -55,9 +55,9 @@
 		<file src="BloomComponent.WindowsUniversal\bin\Release\BloomComponent.WindowsUniversal.pdb" target="lib\uap10.0\BloomComponent.WindowsUniversal.pdb" />
 		<file src="BloomComponent.WindowsUniversal\bin\Release\BloomComponent.WindowsUniversal.dll" target="lib\uap10.0\BloomComponent.WindowsUniversal.dll" />
 
-		<!--DesktopGL-->
-		<file src="BloomComponent.DesktopGL\bin\Release\BloomComponent.DesktopGL.pdb" target="lib\net451\BloomComponent.DesktopGL.pdb" />
-		<file src="BloomComponent.DesktopGL\bin\Release\BloomComponent.DesktopGL.dll" target="lib\net451\BloomComponent.DesktopGL.dll" />
+		<!--WindowsDX-->
+		<file src="BloomComponent.WindowsDX\bin\Release\BloomComponent.WindowsDX.pdb" target="lib\net451\BloomComponent.WindowsDX.pdb" />
+		<file src="BloomComponent.WindowsDX\bin\Release\BloomComponent.WindowsDX.dll" target="lib\net451\BloomComponent.WindowsDX.dll" />
 
 	</files>
 </package>

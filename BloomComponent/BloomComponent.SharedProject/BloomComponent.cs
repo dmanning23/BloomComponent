@@ -29,25 +29,6 @@ namespace BloomBuddy
 
 		BloomSettings settings = BloomSettings.PresetSettings[0];
 
-		// Optionally displays one of the intermediate buffers used
-		// by the bloom postprocess, so you can see exactly what is
-		// being drawn into each rendertarget.
-		public enum IntermediateBuffer
-		{
-			PreBloom,
-			BlurredHorizontally,
-			BlurredBothWays,
-			FinalResult,
-		}
-
-		public IntermediateBuffer ShowBuffer
-		{
-			get { return showBuffer; }
-			set { showBuffer = value; }
-		}
-
-		IntermediateBuffer showBuffer = IntermediateBuffer.FinalResult;
-
 		#endregion
 
 		#region Initialization
@@ -132,25 +113,19 @@ namespace BloomBuddy
 			// shader that extracts only the brightest parts of the image.
 			bloomExtractEffect.Parameters["BloomThreshold"].SetValue(Settings.BloomThreshold);
 
-			DrawFullscreenQuad(sceneRenderTarget, renderTarget1,
-							   bloomExtractEffect,
-							   IntermediateBuffer.PreBloom);
+			DrawFullscreenQuad(sceneRenderTarget, renderTarget1, bloomExtractEffect);
 
 			// Pass 2: draw from rendertarget 1 into rendertarget 2,
 			// using a shader to apply a horizontal gaussian blur filter.
 			SetBlurEffectParameters(1.0f / (float)renderTarget1.Width, 0);
 
-			DrawFullscreenQuad(renderTarget1, renderTarget2,
-							   gaussianBlurEffect,
-							   IntermediateBuffer.BlurredHorizontally);
+			DrawFullscreenQuad(renderTarget1, renderTarget2, gaussianBlurEffect);
 
 			// Pass 3: draw from rendertarget 2 back into rendertarget 1,
 			// using a shader to apply a vertical gaussian blur filter.
 			SetBlurEffectParameters(0, 1.0f / (float)renderTarget1.Height);
 
-			DrawFullscreenQuad(renderTarget2, renderTarget1,
-							   gaussianBlurEffect,
-							   IntermediateBuffer.BlurredBothWays);
+			DrawFullscreenQuad(renderTarget2, renderTarget1, gaussianBlurEffect);
 
 			// Pass 4: draw both rendertarget 1 and the original scene
 			// image back into the main backbuffer, using a shader that
@@ -164,45 +139,30 @@ namespace BloomBuddy
 			parameters["BloomSaturation"].SetValue(Settings.BloomSaturation);
 			parameters["BaseSaturation"].SetValue(Settings.BaseSaturation);
 			parameters["BaseTexture"].SetValue(sceneRenderTarget);
-			//GraphicsDevice.Textures[1] = sceneRenderTarget;
+			GraphicsDevice.Textures[1] = sceneRenderTarget;
 
 			Viewport viewport = GraphicsDevice.Viewport;
 
-			DrawFullscreenQuad(renderTarget1,
-							   viewport.Width, viewport.Height,
-							   bloomCombineEffect,
-							   IntermediateBuffer.FinalResult);
+			DrawFullscreenQuad(renderTarget1, viewport.Width, viewport.Height, bloomCombineEffect);
 		}
 
 		/// <summary>
 		/// Helper for drawing a texture into a rendertarget, using
 		/// a custom shader to apply postprocessing effects.
 		/// </summary>
-		void DrawFullscreenQuad(Texture2D texture, RenderTarget2D renderTarget,
-								Effect effect, IntermediateBuffer currentBuffer)
+		void DrawFullscreenQuad(Texture2D texture, RenderTarget2D renderTarget, Effect effect)
 		{
 			GraphicsDevice.SetRenderTarget(renderTarget);
 
-			DrawFullscreenQuad(texture,
-							   renderTarget.Width, renderTarget.Height,
-							   effect, currentBuffer);
+			DrawFullscreenQuad(texture, renderTarget.Width, renderTarget.Height, effect);
 		}
 
 		/// <summary>
 		/// Helper for drawing a texture into the current rendertarget,
 		/// using a custom shader to apply postprocessing effects.
 		/// </summary>
-		void DrawFullscreenQuad(Texture2D texture, int width, int height,
-								Effect effect, IntermediateBuffer currentBuffer)
+		void DrawFullscreenQuad(Texture2D texture, int width, int height, Effect effect)
 		{
-			// If the user has selected one of the show intermediate buffer options,
-			// we still draw the quad to make sure the image will end up on the screen,
-			// but might need to skip applying the custom pixel shader.
-			if (showBuffer < currentBuffer)
-			{
-				effect = null;
-			}
-
 			SpriteBatch.Begin(0, BlendState.Opaque, null, null, null, effect);
 			SpriteBatch.Draw(texture, new Rectangle(0, 0, width, height), Color.White);
 			SpriteBatch.End();
