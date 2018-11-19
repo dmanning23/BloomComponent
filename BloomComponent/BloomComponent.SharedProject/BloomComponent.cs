@@ -16,6 +16,8 @@ namespace BloomBuddy
 		Effect bloomCombineEffect;
 		Effect gaussianBlurEffect;
 
+		RenderTargetBinding[] prevRenderTargets;
+
 		RenderTarget2D sceneRenderTarget;
 		RenderTarget2D renderTarget1;
 		RenderTarget2D renderTarget2;
@@ -98,6 +100,7 @@ namespace BloomBuddy
 		/// </summary>
 		public void BeginDraw()
 		{
+			prevRenderTargets = GraphicsDevice.GetRenderTargets();
 			GraphicsDevice.SetRenderTarget(sceneRenderTarget);
 		}
 
@@ -130,7 +133,7 @@ namespace BloomBuddy
 			// Pass 4: draw both rendertarget 1 and the original scene
 			// image back into the main backbuffer, using a shader that
 			// combines them to produce the final bloomed result.
-			GraphicsDevice.SetRenderTarget(null);
+			GraphicsDevice.SetRenderTargets(prevRenderTargets);
 
 			EffectParameterCollection parameters = bloomCombineEffect.Parameters;
 
