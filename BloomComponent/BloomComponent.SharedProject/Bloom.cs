@@ -5,7 +5,7 @@ using System;
 
 namespace BloomBuddy
 {
-	public class BloomComponent : IDisposable
+	public class Bloom : IDisposable
 	{
 		#region Fields
 
@@ -35,7 +35,7 @@ namespace BloomBuddy
 
 		#region Initialization
 
-		public BloomComponent()
+		public Bloom()
 		{
 		}
 
