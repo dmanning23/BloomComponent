@@ -62,7 +62,7 @@ namespace BloomBuddy
 			// Create a texture for rendering the main scene, prior to applying bloom.
 			sceneRenderTarget = new RenderTarget2D(GraphicsDevice, width, height, false,
 												   format, pp.DepthStencilFormat, pp.MultiSampleCount,
-												   RenderTargetUsage.DiscardContents);
+												   RenderTargetUsage.PreserveContents);
 
 			// Create two rendertargets for the bloom processing. These are half the
 			// size of the backbuffer, in order to minimize fillrate costs. Reducing
