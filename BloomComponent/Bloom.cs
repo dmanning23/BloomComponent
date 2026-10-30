@@ -18,6 +18,7 @@ namespace BloomBuddy
 
 		RenderTargetBinding[] prevRenderTargets;
 
+		readonly bool useTransparency;
 		RenderTarget2D sceneRenderTarget;
 		RenderTarget2D renderTarget1;
 		RenderTarget2D renderTarget2;
@@ -33,13 +34,17 @@ namespace BloomBuddy
 
 		#endregion
 
-		public Bloom(GraphicsDeviceManager device)
+		public Bloom(GraphicsDeviceManager device, bool useTransparency = true)
 		{
-			device.PreparingDeviceSettings += (sender, e) =>
+			if (useTransparency)
 			{
-				e.GraphicsDeviceInformation.PresentationParameters.RenderTargetUsage =
-					RenderTargetUsage.PreserveContents;
-			};
+				this.useTransparency = true;
+				device.PreparingDeviceSettings += (sender, e) =>
+				{
+					e.GraphicsDeviceInformation.PresentationParameters.RenderTargetUsage =
+						RenderTargetUsage.PreserveContents;
+				};
+			}
 		}
 
 		#region Initialization
@@ -107,7 +112,10 @@ namespace BloomBuddy
 		{
 			prevRenderTargets = GraphicsDevice.GetRenderTargets();
 			GraphicsDevice.SetRenderTarget(sceneRenderTarget);
-			GraphicsDevice.Clear(Color.Transparent);
+			if (useTransparency)
+			{
+				GraphicsDevice.Clear(Color.Transparent);
+			}
 		}
 
 		/// <summary>
@@ -152,7 +160,7 @@ namespace BloomBuddy
 
 			Viewport viewport = GraphicsDevice.Viewport;
 
-			DrawFullscreenQuad(renderTarget1, viewport.Width, viewport.Height, bloomCombineEffect, BlendState.AlphaBlend);
+			DrawFullscreenQuad(renderTarget1, viewport.Width, viewport.Height, bloomCombineEffect, useTransparency ? BlendState.AlphaBlend : BlendState.Opaque);
 		}
 
 		/// <summary>
