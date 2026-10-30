@@ -17,7 +17,9 @@ sampler TextureSampler : register(s0);
 float2 SampleOffsets[SAMPLE_COUNT];
 float SampleWeights[SAMPLE_COUNT];
 
-float4 main(float2 texCoord : TEXCOORD0) : COLOR0
+float4 main(float4 position : SV_POSITION,
+            float4 color : COLOR0,
+            float2 texCoord : TEXCOORD0) : COLOR0
 {
 	float4 c = 0;
 

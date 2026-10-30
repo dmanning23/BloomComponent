@@ -35,7 +35,9 @@ float4 AdjustSaturation(float4 color, float saturation)
 	return lerp(grey, color, saturation);
 }
 
-float4 main(float2 texCoord : TEXCOORD0) : COLOR0
+float4 main(float4 position : SV_POSITION,
+            float4 color : COLOR0,
+            float2 texCoord : TEXCOORD0) : COLOR0
 {
 	// Look up the bloom and original base image colors.
 	float4 bloom = tex2D(BloomSampler, texCoord);
