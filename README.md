@@ -9,9 +9,10 @@ For an example game implementing the BloomComponent, check out https://github.co
 
 2. In the MonoGame Pipeline tool for your project, add the 3 shaders that were installed with the Nuget package.
 
-3.Initialize the BloomComponent object (note: not actually a MonoGame component):
+3.Initialize the Bloom object (note: not actually a MonoGame component):
 ```
-var bloom = new BloomComponent();
+using BloomBuddy;
+var bloom = new Bloom(graphics);
 bloom.LoadContent(spritebatch, content, graphicsDevice);
 ```
 
