@@ -25,6 +25,7 @@ namespace BloomComponentExample
             {
                 GraphicsProfile = GraphicsProfile.HiDef
             };
+            bloom = new Bloom(graphics);
             Content.RootDirectory = "Content";
         }
 
@@ -37,8 +38,7 @@ namespace BloomComponentExample
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            bloom = new Bloom();
-            bloom.LoadContent(spriteBatch, Content, graphics);
+            bloom.LoadContent(spriteBatch, Content, GraphicsDevice);
 
             //Use either a custom bloom config or one of the prebuilt ones
             //bloom.Settings = new BloomSettings("catpants", 0, 2, 1.1f, 0.1f, 1, 1);

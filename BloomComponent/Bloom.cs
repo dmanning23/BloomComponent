@@ -33,19 +33,24 @@ namespace BloomBuddy
 
 		#endregion
 
-		#region Initialization
-
-		public Bloom()
+		public Bloom(GraphicsDeviceManager device)
 		{
+			device.PreparingDeviceSettings += (sender, e) =>
+			{
+				e.GraphicsDeviceInformation.PresentationParameters.RenderTargetUsage =
+					RenderTargetUsage.PreserveContents;
+			};
 		}
+
+		#region Initialization
 
 		/// <summary>
 		/// Load your graphics content.
 		/// </summary>
-		public void LoadContent(SpriteBatch spriteBatch, ContentManager content, GraphicsDeviceManager device)
+		public void LoadContent(SpriteBatch spriteBatch, ContentManager content, GraphicsDevice graphicsDevice)
 		{
+			GraphicsDevice = graphicsDevice;
 			SpriteBatch = spriteBatch;
-			GraphicsDevice = device.GraphicsDevice;
 
 			bloomExtractEffect = content.Load<Effect>("BloomExtract");
 			bloomCombineEffect = content.Load<Effect>("BloomCombine");
@@ -102,6 +107,7 @@ namespace BloomBuddy
 		{
 			prevRenderTargets = GraphicsDevice.GetRenderTargets();
 			GraphicsDevice.SetRenderTarget(sceneRenderTarget);
+			GraphicsDevice.Clear(Color.Transparent);
 		}
 
 		/// <summary>
@@ -146,7 +152,7 @@ namespace BloomBuddy
 
 			Viewport viewport = GraphicsDevice.Viewport;
 
-			DrawFullscreenQuad(renderTarget1, viewport.Width, viewport.Height, bloomCombineEffect);
+			DrawFullscreenQuad(renderTarget1, viewport.Width, viewport.Height, bloomCombineEffect, BlendState.AlphaBlend);
 		}
 
 		/// <summary>
@@ -157,16 +163,16 @@ namespace BloomBuddy
 		{
 			GraphicsDevice.SetRenderTarget(renderTarget);
 
-			DrawFullscreenQuad(texture, renderTarget.Width, renderTarget.Height, effect);
+			DrawFullscreenQuad(texture, renderTarget.Width, renderTarget.Height, effect, BlendState.Opaque);
 		}
 
 		/// <summary>
 		/// Helper for drawing a texture into the current rendertarget,
 		/// using a custom shader to apply postprocessing effects.
 		/// </summary>
-		void DrawFullscreenQuad(Texture2D texture, int width, int height, Effect effect)
+		void DrawFullscreenQuad(Texture2D texture, int width, int height, Effect effect, BlendState blend)
 		{
-			SpriteBatch.Begin(0, BlendState.Opaque, null, null, null, effect);
+			SpriteBatch.Begin(0, blend, null, null, null, effect);
 			SpriteBatch.Draw(texture, new Rectangle(0, 0, width, height), Color.White);
 			SpriteBatch.End();
 		}
