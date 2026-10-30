@@ -48,6 +48,20 @@ namespace BloomComponentExample
             background = Content.Load<Texture2D>("Braid_screenshot8");
         }
 
+        protected override void Initialize()
+        {
+            Window.AllowUserResizing = true;
+            Window.ClientSizeChanged += (_, _) => //resize back buffer
+            {
+                graphics.PreferredBackBufferWidth = Window.ClientBounds.Width;
+                graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
+                graphics.ApplyChanges();
+                bloom.Resize();
+            };
+
+            base.Initialize();
+        }
+
         /// <summary>
         /// Allows the game to run logic such as updating the world,
         /// checking for collisions, gathering input, and playing audio.

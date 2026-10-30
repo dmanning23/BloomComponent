@@ -61,6 +61,11 @@ namespace BloomBuddy
 			bloomCombineEffect = content.Load<Effect>("BloomCombine");
 			gaussianBlurEffect = content.Load<Effect>("GaussianBlur");
 
+			Resize();
+		}
+
+		public void Resize()
+		{
 			// Look up the resolution and format of our main backbuffer.
 			PresentationParameters pp = GraphicsDevice.PresentationParameters;
 
@@ -70,6 +75,7 @@ namespace BloomBuddy
 			SurfaceFormat format = pp.BackBufferFormat;
 
 			// Create a texture for rendering the main scene, prior to applying bloom.
+			sceneRenderTarget?.Dispose();
 			sceneRenderTarget = new RenderTarget2D(GraphicsDevice, width, height, false,
 												   format, pp.DepthStencilFormat, pp.MultiSampleCount,
 												   RenderTargetUsage.PreserveContents);
@@ -81,6 +87,8 @@ namespace BloomBuddy
 			width /= 2;
 			height /= 2;
 
+			renderTarget1?.Dispose();
+			renderTarget2?.Dispose();
 			renderTarget1 = new RenderTarget2D(GraphicsDevice, width, height, false, format, DepthFormat.None);
 			renderTarget2 = new RenderTarget2D(GraphicsDevice, width, height, false, format, DepthFormat.None);
 		}
