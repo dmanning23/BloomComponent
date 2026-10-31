@@ -113,7 +113,7 @@ namespace BloomComponentExample
             spriteBatch.Begin();
             spriteBatch.Draw(background,
                 new Rectangle(0, 0, graphics.GraphicsDevice.PresentationParameters.BackBufferWidth, graphics.GraphicsDevice.PresentationParameters.BackBufferHeight),
-                Color.White);
+                Color.White); //this example just draws a fullscreen image
             spriteBatch.End();
 
             //This will draw the scene with bloom
