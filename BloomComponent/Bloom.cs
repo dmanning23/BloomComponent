@@ -18,6 +18,7 @@ namespace BloomBuddy
 
 		RenderTargetBinding[] prevRenderTargets;
 
+		readonly bool useTransparency;
 		RenderTarget2D sceneRenderTarget;
 		RenderTarget2D renderTarget1;
 		RenderTarget2D renderTarget2;
@@ -33,24 +34,38 @@ namespace BloomBuddy
 
 		#endregion
 
-		#region Initialization
-
-		public Bloom()
+		public Bloom(GraphicsDeviceManager device, bool useTransparency = true)
 		{
+			if (useTransparency)
+			{
+				this.useTransparency = true;
+				device.PreparingDeviceSettings += (sender, e) =>
+				{
+					e.GraphicsDeviceInformation.PresentationParameters.RenderTargetUsage =
+						RenderTargetUsage.PreserveContents;
+				};
+			}
 		}
+
+		#region Initialization
 
 		/// <summary>
 		/// Load your graphics content.
 		/// </summary>
-		public void LoadContent(SpriteBatch spriteBatch, ContentManager content, GraphicsDeviceManager device)
+		public void LoadContent(SpriteBatch spriteBatch, ContentManager content, GraphicsDevice graphicsDevice)
 		{
+			GraphicsDevice = graphicsDevice;
 			SpriteBatch = spriteBatch;
-			GraphicsDevice = device.GraphicsDevice;
 
 			bloomExtractEffect = content.Load<Effect>("BloomExtract");
 			bloomCombineEffect = content.Load<Effect>("BloomCombine");
 			gaussianBlurEffect = content.Load<Effect>("GaussianBlur");
 
+			Resize();
+		}
+
+		public void Resize()
+		{
 			// Look up the resolution and format of our main backbuffer.
 			PresentationParameters pp = GraphicsDevice.PresentationParameters;
 
@@ -60,6 +75,7 @@ namespace BloomBuddy
 			SurfaceFormat format = pp.BackBufferFormat;
 
 			// Create a texture for rendering the main scene, prior to applying bloom.
+			sceneRenderTarget?.Dispose();
 			sceneRenderTarget = new RenderTarget2D(GraphicsDevice, width, height, false,
 												   format, pp.DepthStencilFormat, pp.MultiSampleCount,
 												   RenderTargetUsage.PreserveContents);
@@ -71,6 +87,8 @@ namespace BloomBuddy
 			width /= 2;
 			height /= 2;
 
+			renderTarget1?.Dispose();
+			renderTarget2?.Dispose();
 			renderTarget1 = new RenderTarget2D(GraphicsDevice, width, height, false, format, DepthFormat.None);
 			renderTarget2 = new RenderTarget2D(GraphicsDevice, width, height, false, format, DepthFormat.None);
 		}
@@ -102,6 +120,10 @@ namespace BloomBuddy
 		{
 			prevRenderTargets = GraphicsDevice.GetRenderTargets();
 			GraphicsDevice.SetRenderTarget(sceneRenderTarget);
+			if (useTransparency)
+			{
+				GraphicsDevice.Clear(Color.Transparent);
+			}
 		}
 
 		/// <summary>
@@ -146,7 +168,7 @@ namespace BloomBuddy
 
 			Viewport viewport = GraphicsDevice.Viewport;
 
-			DrawFullscreenQuad(renderTarget1, viewport.Width, viewport.Height, bloomCombineEffect);
+			DrawFullscreenQuad(renderTarget1, viewport.Width, viewport.Height, bloomCombineEffect, useTransparency ? BlendState.AlphaBlend : BlendState.Opaque);
 		}
 
 		/// <summary>
@@ -157,16 +179,16 @@ namespace BloomBuddy
 		{
 			GraphicsDevice.SetRenderTarget(renderTarget);
 
-			DrawFullscreenQuad(texture, renderTarget.Width, renderTarget.Height, effect);
+			DrawFullscreenQuad(texture, renderTarget.Width, renderTarget.Height, effect, BlendState.Opaque);
 		}
 
 		/// <summary>
 		/// Helper for drawing a texture into the current rendertarget,
 		/// using a custom shader to apply postprocessing effects.
 		/// </summary>
-		void DrawFullscreenQuad(Texture2D texture, int width, int height, Effect effect)
+		void DrawFullscreenQuad(Texture2D texture, int width, int height, Effect effect, BlendState blend)
 		{
-			SpriteBatch.Begin(0, BlendState.Opaque, null, null, null, effect);
+			SpriteBatch.Begin(0, blend, null, null, null, effect);
 			SpriteBatch.Draw(texture, new Rectangle(0, 0, width, height), Color.White);
 			SpriteBatch.End();
 		}

@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using BloomBuddy;
+﻿using BloomBuddy;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -17,6 +16,7 @@ namespace BloomComponentExample
         Texture2D background;
         Bloom bloom;
 
+        bool buttonPressed;
         int SettingsIndex { get; set; } = 0;
 
         public Game1()
@@ -25,6 +25,7 @@ namespace BloomComponentExample
             {
                 GraphicsProfile = GraphicsProfile.HiDef
             };
+            bloom = new Bloom(graphics);
             Content.RootDirectory = "Content";
         }
 
@@ -37,8 +38,7 @@ namespace BloomComponentExample
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            bloom = new Bloom();
-            bloom.LoadContent(spriteBatch, Content, graphics);
+            bloom.LoadContent(spriteBatch, Content, GraphicsDevice);
 
             //Use either a custom bloom config or one of the prebuilt ones
             //bloom.Settings = new BloomSettings("catpants", 0, 2, 1.1f, 0.1f, 1, 1);
@@ -46,6 +46,20 @@ namespace BloomComponentExample
 
             //Load a cool picture to use as background
             background = Content.Load<Texture2D>("Braid_screenshot8");
+        }
+
+        protected override void Initialize()
+        {
+            Window.AllowUserResizing = true;
+            Window.ClientSizeChanged += (_, _) => //resize back buffer
+            {
+                graphics.PreferredBackBufferWidth = Window.ClientBounds.Width;
+                graphics.PreferredBackBufferHeight = Window.ClientBounds.Height;
+                graphics.ApplyChanges();
+                bloom.Resize();
+            };
+
+            base.Initialize();
         }
 
         /// <summary>
@@ -61,14 +75,24 @@ namespace BloomComponentExample
 #endif
 
             //Increment the bloom config
+
             if (GamePad.GetState(PlayerIndex.One).Buttons.A == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.A))
             {
-                SettingsIndex++;
-                if (SettingsIndex >= BloomSettings.PresetSettings.Length)
+                if (!buttonPressed)
                 {
-                    SettingsIndex = 0;
+                    buttonPressed = true;
+
+                    SettingsIndex++;
+                    if (SettingsIndex >= BloomSettings.PresetSettings.Length)
+                    {
+                        SettingsIndex = 0;
+                    }
+                    bloom.Settings = BloomSettings.PresetSettings[SettingsIndex];
                 }
-                bloom.Settings = BloomSettings.PresetSettings[SettingsIndex];
+            }
+            else
+            {
+                buttonPressed = false;
             }
 
             base.Update(gameTime);
@@ -81,21 +105,35 @@ namespace BloomComponentExample
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
+            var size = new Point(graphics.GraphicsDevice.PresentationParameters.BackBufferWidth, graphics.GraphicsDevice.PresentationParameters.BackBufferHeight);
 
-            bloom.BeginDraw();
-
+            //draw stuff before (no bloom)
             spriteBatch.Begin();
-
-            //...draw all your stuff
-            spriteBatch.Draw(background,
-                new Rectangle(0, 0, graphics.GraphicsDevice.PresentationParameters.BackBufferWidth, graphics.GraphicsDevice.PresentationParameters.BackBufferHeight),
-                Color.White);
-
+            DrawBackground(new Rectangle(Point.Zero, size / 8));
             spriteBatch.End();
 
+            bloom.BeginDraw();
+            spriteBatch.Begin();
+
+            //...draw all your stuff (with bloom)
+            DrawBackground(new Rectangle(size / 16, size * 7 / 8));
+
+            spriteBatch.End();
             bloom.Draw(gameTime);
 
+            //draw stuff after (no bloom)
+            spriteBatch.Begin();
+            DrawBackground(new Rectangle(size * 7 / 8, size / 8));
+            spriteBatch.End();
+
             base.Draw(gameTime);
+
+            void DrawBackground(Rectangle rectangle)
+            {
+                spriteBatch.Draw(background,
+                    rectangle,
+                    Color.White);
+            }
         }
     }
 }

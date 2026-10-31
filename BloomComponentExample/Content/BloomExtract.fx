@@ -13,7 +13,9 @@ sampler TextureSampler : register(s0);
 
 float BloomThreshold;
 
-float4 main(float2 texCoord : TEXCOORD0) : COLOR0
+float4 main(float4 position : SV_POSITION,
+            float4 color : COLOR0,
+            float2 texCoord : TEXCOORD0) : COLOR0
 {
 	// Look up the original image color.
 	float4 c = tex2D(TextureSampler, texCoord);
