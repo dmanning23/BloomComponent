@@ -7,7 +7,7 @@ For an example game implementing the BloomComponent, check out https://github.co
 
 1.Add the Nuget package to your solution: https://www.nuget.org/packages/BloomComponent/
 
-2. In the MonoGame Pipeline tool for your project, add the 3 shaders that were installed with the Nuget package.
+2. In the MonoGame Pipeline tool for your project, add the 3 shaders that are part of this project. They can be downloaded from https://github.com/dmanning23/BloomComponent/tree/master/Content
 
 3.Initialize the Bloom object (note: not actually a MonoGame component):
 ```

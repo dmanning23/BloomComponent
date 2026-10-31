@@ -5,270 +5,271 @@ using System;
 
 namespace BloomBuddy
 {
-	public class Bloom : IDisposable
-	{
-		#region Fields
+    public class Bloom : IDisposable
+    {
+        #region Fields
 
-		SpriteBatch SpriteBatch { get; set; }
-		GraphicsDevice GraphicsDevice { get; set; }
+        SpriteBatch SpriteBatch { get; set; }
+        GraphicsDevice GraphicsDevice { get; set; }
 
-		Effect bloomExtractEffect;
-		Effect bloomCombineEffect;
-		Effect gaussianBlurEffect;
+        Effect bloomExtractEffect;
+        Effect bloomCombineEffect;
+        Effect gaussianBlurEffect;
 
-		RenderTargetBinding[] prevRenderTargets;
+        RenderTargetBinding[] prevRenderTargets;
 
-		readonly bool useTransparency;
-		RenderTarget2D sceneRenderTarget;
-		RenderTarget2D renderTarget1;
-		RenderTarget2D renderTarget2;
+        readonly bool useTransparency;
+        RenderTarget2D sceneRenderTarget;
+        RenderTarget2D renderTarget1;
+        RenderTarget2D renderTarget2;
 
-		// Choose what display settings the bloom should use.
-		public BloomSettings Settings
-		{
-			get { return settings; }
-			set { settings = value; }
-		}
+        // Choose what display settings the bloom should use.
+        public BloomSettings Settings
+        {
+            get { return settings; }
+            set { settings = value; }
+        }
 
-		BloomSettings settings = BloomSettings.PresetSettings[0];
+        BloomSettings settings = BloomSettings.PresetSettings[0];
 
-		#endregion
+        #endregion
 
-		public Bloom(GraphicsDeviceManager device, bool useTransparency = true)
-		{
-			if (useTransparency)
-			{
-				this.useTransparency = true;
-				device.PreparingDeviceSettings += (sender, e) =>
-				{
-					e.GraphicsDeviceInformation.PresentationParameters.RenderTargetUsage =
-						RenderTargetUsage.PreserveContents;
-				};
-			}
-		}
+        public Bloom(GraphicsDeviceManager device, bool useTransparency = true)
+        {
+            this.useTransparency = useTransparency;
+            if (useTransparency)
+            {
 
-		#region Initialization
+                device.PreparingDeviceSettings += (sender, e) =>
+                {
+                    e.GraphicsDeviceInformation.PresentationParameters.RenderTargetUsage =
+                        RenderTargetUsage.PreserveContents;
+                };
+            }
+        }
 
-		/// <summary>
-		/// Load your graphics content.
-		/// </summary>
-		public void LoadContent(SpriteBatch spriteBatch, ContentManager content, GraphicsDevice graphicsDevice)
-		{
-			GraphicsDevice = graphicsDevice;
-			SpriteBatch = spriteBatch;
+        #region Initialization
 
-			bloomExtractEffect = content.Load<Effect>("BloomExtract");
-			bloomCombineEffect = content.Load<Effect>("BloomCombine");
-			gaussianBlurEffect = content.Load<Effect>("GaussianBlur");
+        /// <summary>
+        /// Load your graphics content.
+        /// </summary>
+        public void LoadContent(SpriteBatch spriteBatch, ContentManager content, GraphicsDevice graphicsDevice)
+        {
+            GraphicsDevice = graphicsDevice;
+            SpriteBatch = spriteBatch;
 
-			Resize();
-		}
+            bloomExtractEffect = content.Load<Effect>("BloomExtract");
+            bloomCombineEffect = content.Load<Effect>("BloomCombine");
+            gaussianBlurEffect = content.Load<Effect>("GaussianBlur");
 
-		public void Resize()
-		{
-			// Look up the resolution and format of our main backbuffer.
-			PresentationParameters pp = GraphicsDevice.PresentationParameters;
+            Resize();
+        }
 
-			int width = pp.BackBufferWidth;
-			int height = pp.BackBufferHeight;
+        public void Resize()
+        {
+            // Look up the resolution and format of our main backbuffer.
+            PresentationParameters pp = GraphicsDevice.PresentationParameters;
 
-			SurfaceFormat format = pp.BackBufferFormat;
+            int width = pp.BackBufferWidth;
+            int height = pp.BackBufferHeight;
 
-			// Create a texture for rendering the main scene, prior to applying bloom.
-			sceneRenderTarget?.Dispose();
-			sceneRenderTarget = new RenderTarget2D(GraphicsDevice, width, height, false,
-												   format, pp.DepthStencilFormat, pp.MultiSampleCount,
-												   RenderTargetUsage.PreserveContents);
+            SurfaceFormat format = pp.BackBufferFormat;
 
-			// Create two rendertargets for the bloom processing. These are half the
-			// size of the backbuffer, in order to minimize fillrate costs. Reducing
-			// the resolution in this way doesn't hurt quality, because we are going
-			// to be blurring the bloom images in any case.
-			width /= 2;
-			height /= 2;
+            // Create a texture for rendering the main scene, prior to applying bloom.
+            sceneRenderTarget?.Dispose();
+            sceneRenderTarget = new RenderTarget2D(GraphicsDevice, width, height, false,
+                                                   format, pp.DepthStencilFormat, pp.MultiSampleCount,
+                                                   RenderTargetUsage.PreserveContents);
 
-			renderTarget1?.Dispose();
-			renderTarget2?.Dispose();
-			renderTarget1 = new RenderTarget2D(GraphicsDevice, width, height, false, format, DepthFormat.None);
-			renderTarget2 = new RenderTarget2D(GraphicsDevice, width, height, false, format, DepthFormat.None);
-		}
+            // Create two rendertargets for the bloom processing. These are half the
+            // size of the backbuffer, in order to minimize fillrate costs. Reducing
+            // the resolution in this way doesn't hurt quality, because we are going
+            // to be blurring the bloom images in any case.
+            width /= 2;
+            height /= 2;
 
-		/// <summary>
-		/// Unload your graphics content.
-		/// </summary>
-		public void Dispose()
-		{
-			sceneRenderTarget.Dispose();
-			renderTarget1.Dispose();
-			renderTarget2.Dispose();
+            renderTarget1?.Dispose();
+            renderTarget2?.Dispose();
+            renderTarget1 = new RenderTarget2D(GraphicsDevice, width, height, false, format, DepthFormat.None);
+            renderTarget2 = new RenderTarget2D(GraphicsDevice, width, height, false, format, DepthFormat.None);
+        }
 
-			sceneRenderTarget = null;
-			renderTarget1 = null;
-			renderTarget2 = null;
-		}
+        /// <summary>
+        /// Unload your graphics content.
+        /// </summary>
+        public void Dispose()
+        {
+            sceneRenderTarget.Dispose();
+            renderTarget1.Dispose();
+            renderTarget2.Dispose();
 
-		#endregion
+            sceneRenderTarget = null;
+            renderTarget1 = null;
+            renderTarget2 = null;
+        }
 
-		#region Draw
+        #endregion
 
-		/// <summary>
-		/// This should be called at the very start of the scene rendering. The bloom
-		/// component uses it to redirect drawing into its custom rendertarget, so it
-		/// can capture the scene image in preparation for applying the bloom filter.
-		/// </summary>
-		public void BeginDraw()
-		{
-			prevRenderTargets = GraphicsDevice.GetRenderTargets();
-			GraphicsDevice.SetRenderTarget(sceneRenderTarget);
-			if (useTransparency)
-			{
-				GraphicsDevice.Clear(Color.Transparent);
-			}
-		}
+        #region Draw
 
-		/// <summary>
-		/// This is where it all happens. Grabs a scene that has already been rendered,
-		/// and uses postprocess magic to add a glowing bloom effect over the top of it.
-		/// </summary>
-		public void Draw(GameTime gameTime)
-		{
-			GraphicsDevice.SamplerStates[1] = SamplerState.LinearClamp;
+        /// <summary>
+        /// This should be called at the very start of the scene rendering. The bloom
+        /// component uses it to redirect drawing into its custom rendertarget, so it
+        /// can capture the scene image in preparation for applying the bloom filter.
+        /// </summary>
+        public void BeginDraw()
+        {
+            prevRenderTargets = GraphicsDevice.GetRenderTargets();
+            GraphicsDevice.SetRenderTarget(sceneRenderTarget);
+            if (useTransparency)
+            {
+                GraphicsDevice.Clear(Color.Transparent);
+            }
+        }
 
-			// Pass 1: draw the scene into rendertarget 1, using a
-			// shader that extracts only the brightest parts of the image.
-			bloomExtractEffect.Parameters["BloomThreshold"].SetValue(Settings.BloomThreshold);
+        /// <summary>
+        /// This is where it all happens. Grabs a scene that has already been rendered,
+        /// and uses postprocess magic to add a glowing bloom effect over the top of it.
+        /// </summary>
+        public void Draw(GameTime gameTime)
+        {
+            GraphicsDevice.SamplerStates[1] = SamplerState.LinearClamp;
 
-			DrawFullscreenQuad(sceneRenderTarget, renderTarget1, bloomExtractEffect);
+            // Pass 1: draw the scene into rendertarget 1, using a
+            // shader that extracts only the brightest parts of the image.
+            bloomExtractEffect.Parameters["BloomThreshold"].SetValue(Settings.BloomThreshold);
 
-			// Pass 2: draw from rendertarget 1 into rendertarget 2,
-			// using a shader to apply a horizontal gaussian blur filter.
-			SetBlurEffectParameters(1.0f / (float)renderTarget1.Width, 0);
+            DrawFullscreenQuad(sceneRenderTarget, renderTarget1, bloomExtractEffect);
 
-			DrawFullscreenQuad(renderTarget1, renderTarget2, gaussianBlurEffect);
+            // Pass 2: draw from rendertarget 1 into rendertarget 2,
+            // using a shader to apply a horizontal gaussian blur filter.
+            SetBlurEffectParameters(1.0f / (float)renderTarget1.Width, 0);
 
-			// Pass 3: draw from rendertarget 2 back into rendertarget 1,
-			// using a shader to apply a vertical gaussian blur filter.
-			SetBlurEffectParameters(0, 1.0f / (float)renderTarget1.Height);
+            DrawFullscreenQuad(renderTarget1, renderTarget2, gaussianBlurEffect);
 
-			DrawFullscreenQuad(renderTarget2, renderTarget1, gaussianBlurEffect);
+            // Pass 3: draw from rendertarget 2 back into rendertarget 1,
+            // using a shader to apply a vertical gaussian blur filter.
+            SetBlurEffectParameters(0, 1.0f / (float)renderTarget1.Height);
 
-			// Pass 4: draw both rendertarget 1 and the original scene
-			// image back into the main backbuffer, using a shader that
-			// combines them to produce the final bloomed result.
-			GraphicsDevice.SetRenderTargets(prevRenderTargets);
+            DrawFullscreenQuad(renderTarget2, renderTarget1, gaussianBlurEffect);
 
-			EffectParameterCollection parameters = bloomCombineEffect.Parameters;
+            // Pass 4: draw both rendertarget 1 and the original scene
+            // image back into the main backbuffer, using a shader that
+            // combines them to produce the final bloomed result.
+            GraphicsDevice.SetRenderTargets(prevRenderTargets);
 
-			parameters["BloomIntensity"].SetValue(Settings.BloomIntensity);
-			parameters["BaseIntensity"].SetValue(Settings.BaseIntensity);
-			parameters["BloomSaturation"].SetValue(Settings.BloomSaturation);
-			parameters["BaseSaturation"].SetValue(Settings.BaseSaturation);
-			parameters["BaseTexture"].SetValue(sceneRenderTarget);
-			GraphicsDevice.Textures[1] = sceneRenderTarget;
+            EffectParameterCollection parameters = bloomCombineEffect.Parameters;
 
-			Viewport viewport = GraphicsDevice.Viewport;
+            parameters["BloomIntensity"].SetValue(Settings.BloomIntensity);
+            parameters["BaseIntensity"].SetValue(Settings.BaseIntensity);
+            parameters["BloomSaturation"].SetValue(Settings.BloomSaturation);
+            parameters["BaseSaturation"].SetValue(Settings.BaseSaturation);
+            parameters["BaseTexture"].SetValue(sceneRenderTarget);
+            GraphicsDevice.Textures[1] = sceneRenderTarget;
 
-			DrawFullscreenQuad(renderTarget1, viewport.Width, viewport.Height, bloomCombineEffect, useTransparency ? BlendState.AlphaBlend : BlendState.Opaque);
-		}
+            Viewport viewport = GraphicsDevice.Viewport;
 
-		/// <summary>
-		/// Helper for drawing a texture into a rendertarget, using
-		/// a custom shader to apply postprocessing effects.
-		/// </summary>
-		void DrawFullscreenQuad(Texture2D texture, RenderTarget2D renderTarget, Effect effect)
-		{
-			GraphicsDevice.SetRenderTarget(renderTarget);
+            DrawFullscreenQuad(renderTarget1, viewport.Width, viewport.Height, bloomCombineEffect, useTransparency ? BlendState.AlphaBlend : BlendState.Opaque);
+        }
 
-			DrawFullscreenQuad(texture, renderTarget.Width, renderTarget.Height, effect, BlendState.Opaque);
-		}
+        /// <summary>
+        /// Helper for drawing a texture into a rendertarget, using
+        /// a custom shader to apply postprocessing effects.
+        /// </summary>
+        void DrawFullscreenQuad(Texture2D texture, RenderTarget2D renderTarget, Effect effect)
+        {
+            GraphicsDevice.SetRenderTarget(renderTarget);
 
-		/// <summary>
-		/// Helper for drawing a texture into the current rendertarget,
-		/// using a custom shader to apply postprocessing effects.
-		/// </summary>
-		void DrawFullscreenQuad(Texture2D texture, int width, int height, Effect effect, BlendState blend)
-		{
-			SpriteBatch.Begin(0, blend, null, null, null, effect);
-			SpriteBatch.Draw(texture, new Rectangle(0, 0, width, height), Color.White);
-			SpriteBatch.End();
-		}
+            DrawFullscreenQuad(texture, renderTarget.Width, renderTarget.Height, effect, BlendState.Opaque);
+        }
 
-		/// <summary>
-		/// Computes sample weightings and texture coordinate offsets
-		/// for one pass of a separable gaussian blur filter.
-		/// </summary>
-		void SetBlurEffectParameters(float dx, float dy)
-		{
-			// Look up the sample weight and offset effect parameters.
-			var weightsParameter = gaussianBlurEffect.Parameters["SampleWeights"];
-			var offsetsParameter = gaussianBlurEffect.Parameters["SampleOffsets"];
+        /// <summary>
+        /// Helper for drawing a texture into the current rendertarget,
+        /// using a custom shader to apply postprocessing effects.
+        /// </summary>
+        void DrawFullscreenQuad(Texture2D texture, int width, int height, Effect effect, BlendState blend)
+        {
+            SpriteBatch.Begin(0, blend, null, null, null, effect);
+            SpriteBatch.Draw(texture, new Rectangle(0, 0, width, height), Color.White);
+            SpriteBatch.End();
+        }
 
-			// Look up how many samples our gaussian blur effect supports.
-			int sampleCount = weightsParameter.Elements.Count;
+        /// <summary>
+        /// Computes sample weightings and texture coordinate offsets
+        /// for one pass of a separable gaussian blur filter.
+        /// </summary>
+        void SetBlurEffectParameters(float dx, float dy)
+        {
+            // Look up the sample weight and offset effect parameters.
+            var weightsParameter = gaussianBlurEffect.Parameters["SampleWeights"];
+            var offsetsParameter = gaussianBlurEffect.Parameters["SampleOffsets"];
 
-			// Create temporary arrays for computing our filter settings.
-			float[] sampleWeights = new float[sampleCount];
-			Vector2[] sampleOffsets = new Vector2[sampleCount];
+            // Look up how many samples our gaussian blur effect supports.
+            int sampleCount = weightsParameter.Elements.Count;
 
-			// The first sample always has a zero offset.
-			sampleWeights[0] = ComputeGaussian(0);
-			sampleOffsets[0] = new Vector2(0);
+            // Create temporary arrays for computing our filter settings.
+            float[] sampleWeights = new float[sampleCount];
+            Vector2[] sampleOffsets = new Vector2[sampleCount];
 
-			// Maintain a sum of all the weighting values.
-			float totalWeights = sampleWeights[0];
+            // The first sample always has a zero offset.
+            sampleWeights[0] = ComputeGaussian(0);
+            sampleOffsets[0] = new Vector2(0);
 
-			// Add pairs of additional sample taps, positioned
-			// along a line in both directions from the center.
-			for (int i = 0; i < sampleCount / 2; i++)
-			{
-				// Store weights for the positive and negative taps.
-				float weight = ComputeGaussian(i + 1);
+            // Maintain a sum of all the weighting values.
+            float totalWeights = sampleWeights[0];
 
-				sampleWeights[i * 2 + 1] = weight;
-				sampleWeights[i * 2 + 2] = weight;
+            // Add pairs of additional sample taps, positioned
+            // along a line in both directions from the center.
+            for (int i = 0; i < sampleCount / 2; i++)
+            {
+                // Store weights for the positive and negative taps.
+                float weight = ComputeGaussian(i + 1);
 
-				totalWeights += weight * 2;
+                sampleWeights[i * 2 + 1] = weight;
+                sampleWeights[i * 2 + 2] = weight;
 
-				// To get the maximum amount of blurring from a limited number of
-				// pixel shader samples, we take advantage of the bilinear filtering
-				// hardware inside the texture fetch unit. If we position our texture
-				// coordinates exactly halfway between two texels, the filtering unit
-				// will average them for us, giving two samples for the price of one.
-				// This allows us to step in units of two texels per sample, rather
-				// than just one at a time. The 1.5 offset kicks things off by
-				// positioning us nicely in between two texels.
-				float sampleOffset = i * 2 + 1.5f;
+                totalWeights += weight * 2;
 
-				Vector2 delta = new Vector2(dx, dy) * sampleOffset;
+                // To get the maximum amount of blurring from a limited number of
+                // pixel shader samples, we take advantage of the bilinear filtering
+                // hardware inside the texture fetch unit. If we position our texture
+                // coordinates exactly halfway between two texels, the filtering unit
+                // will average them for us, giving two samples for the price of one.
+                // This allows us to step in units of two texels per sample, rather
+                // than just one at a time. The 1.5 offset kicks things off by
+                // positioning us nicely in between two texels.
+                float sampleOffset = i * 2 + 1.5f;
 
-				// Store texture coordinate offsets for the positive and negative taps.
-				sampleOffsets[i * 2 + 1] = delta;
-				sampleOffsets[i * 2 + 2] = -delta;
-			}
+                Vector2 delta = new Vector2(dx, dy) * sampleOffset;
 
-			// Normalize the list of sample weightings, so they will always sum to one.
-			for (int i = 0; i < sampleWeights.Length; i++)
-			{
-				sampleWeights[i] /= totalWeights;
-			}
+                // Store texture coordinate offsets for the positive and negative taps.
+                sampleOffsets[i * 2 + 1] = delta;
+                sampleOffsets[i * 2 + 2] = -delta;
+            }
 
-			// Tell the effect about our new filter settings.
-			weightsParameter.SetValue(sampleWeights);
-			offsetsParameter.SetValue(sampleOffsets);
-		}
+            // Normalize the list of sample weightings, so they will always sum to one.
+            for (int i = 0; i < sampleWeights.Length; i++)
+            {
+                sampleWeights[i] /= totalWeights;
+            }
 
-		/// <summary>
-		/// Evaluates a single point on the gaussian falloff curve.
-		/// Used for setting up the blur filter weightings.
-		/// </summary>
-		float ComputeGaussian(float n)
-		{
-			float theta = Settings.BlurAmount;
+            // Tell the effect about our new filter settings.
+            weightsParameter.SetValue(sampleWeights);
+            offsetsParameter.SetValue(sampleOffsets);
+        }
 
-			return (float)((1.0 / Math.Sqrt(2 * Math.PI * theta)) *
-						   Math.Exp(-(n * n) / (2 * theta * theta)));
-		}
+        /// <summary>
+        /// Evaluates a single point on the gaussian falloff curve.
+        /// Used for setting up the blur filter weightings.
+        /// </summary>
+        float ComputeGaussian(float n)
+        {
+            float theta = Settings.BlurAmount;
 
-		#endregion
-	}
+            return (float)((1.0 / Math.Sqrt(2 * Math.PI * theta)) *
+                           Math.Exp(-(n * n) / (2 * theta * theta)));
+        }
+
+        #endregion
+    }
 }

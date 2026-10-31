@@ -25,7 +25,7 @@ namespace BloomComponentExample
             {
                 GraphicsProfile = GraphicsProfile.HiDef
             };
-            bloom = new Bloom(graphics);
+            bloom = new Bloom(graphics, false);
             Content.RootDirectory = "Content";
         }
 
@@ -105,35 +105,21 @@ namespace BloomComponentExample
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            var size = new Point(graphics.GraphicsDevice.PresentationParameters.BackBufferWidth, graphics.GraphicsDevice.PresentationParameters.BackBufferHeight);
 
-            //draw stuff before (no bloom)
-            spriteBatch.Begin();
-            DrawBackground(new Rectangle(Point.Zero, size / 8));
-            spriteBatch.End();
-
+            //Start the bloom to capture everything as it is drawn
             bloom.BeginDraw();
+
+            //Draw all your stuff
             spriteBatch.Begin();
-
-            //...draw all your stuff (with bloom)
-            DrawBackground(new Rectangle(size / 16, size * 7 / 8));
-
+            spriteBatch.Draw(background,
+                new Rectangle(0, 0, graphics.GraphicsDevice.PresentationParameters.BackBufferWidth, graphics.GraphicsDevice.PresentationParameters.BackBufferHeight),
+                Color.White);
             spriteBatch.End();
+
+            //This will draw the scene with bloom
             bloom.Draw(gameTime);
 
-            //draw stuff after (no bloom)
-            spriteBatch.Begin();
-            DrawBackground(new Rectangle(size * 7 / 8, size / 8));
-            spriteBatch.End();
-
             base.Draw(gameTime);
-
-            void DrawBackground(Rectangle rectangle)
-            {
-                spriteBatch.Draw(background,
-                    rectangle,
-                    Color.White);
-            }
         }
     }
 }
